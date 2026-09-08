@@ -1,10 +1,10 @@
 /**
- * @grandjury/sdk — TypeScript SDK for the GrandJury human evaluation platform.
+ * @humanjudge/grandjury-js — JavaScript/TypeScript SDK for the GrandJury human evaluation platform.
  *
  * Quickstart:
- *   import GrandJury from "@grandjury/sdk";
+ *   import GrandJury from "@humanjudge/grandjury-js";
  *
- *   const gj = new GrandJury({ apiKey: "gj_sk_live_…", projectId: "<uuid>" });
+ *   const gj = new GrandJury(); // reads GRANDJURY_API_KEY from env automatically
  *
  *   await gj.trace({
  *     name: "cover_letter_generation",
@@ -19,10 +19,11 @@
  *
  * Design: Silent failure — errors are logged to console.error only.
  * The SDK never throws; your app must never crash because of GrandJury.
+ * If no API key is configured, all methods are no-ops.
  */
 interface GrandJuryOptions {
-    apiKey: string;
-    projectId: string;
+    /** API key. Defaults to GRANDJURY_API_KEY environment variable. */
+    apiKey?: string;
     baseUrl?: string;
     timeoutMs?: number;
 }
@@ -43,12 +44,11 @@ interface TraceResult {
 }
 declare class GrandJury {
     private readonly apiKey;
-    private readonly projectId;
     private readonly baseUrl;
     private readonly timeoutMs;
-    constructor(options: GrandJuryOptions);
+    constructor(options?: GrandJuryOptions);
     /**
-     * Submit one trace. Silent on failure.
+     * Submit one trace. Silent on failure. No-op if no API key is configured.
      */
     trace(input: TraceInput): Promise<TraceResult>;
     /**

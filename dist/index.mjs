@@ -6,17 +6,22 @@ function generateInferenceId() {
   return `gj_inf_${ts}_${rand}`;
 }
 var GrandJury = class {
-  constructor(options) {
-    this.apiKey = options.apiKey;
-    this.projectId = options.projectId;
+  constructor(options = {}) {
+    this.apiKey = options.apiKey ?? (typeof process !== "undefined" ? process.env.GRANDJURY_API_KEY : void 0);
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, "");
     this.timeoutMs = options.timeoutMs ?? 5e3;
+    if (!this.apiKey) {
+      console.warn("[grandjury] No API key found \u2014 SDK is in no-op mode. Set GRANDJURY_API_KEY to enable.");
+    }
   }
   /**
-   * Submit one trace. Silent on failure.
+   * Submit one trace. Silent on failure. No-op if no API key is configured.
    */
   async trace(input) {
     const inferenceId = input.gjInferenceId ?? generateInferenceId();
+    if (!this.apiKey) {
+      return { gjInferenceId: inferenceId, success: false };
+    }
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), this.timeoutMs);

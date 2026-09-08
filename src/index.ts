@@ -1,10 +1,10 @@
 /**
- * @grandjury/sdk — TypeScript SDK for the GrandJury human evaluation platform.
+ * @humanjudge/grandjury-js — JavaScript/TypeScript SDK for the GrandJury human evaluation platform.
  *
  * Quickstart:
- *   import GrandJury from "@grandjury/sdk";
+ *   import GrandJury from "@humanjudge/grandjury-js";
  *
- *   const gj = new GrandJury({ apiKey: "gj_sk_live_…", projectId: "<uuid>" });
+ *   const gj = new GrandJury(); // reads GRANDJURY_API_KEY from env automatically
  *
  *   await gj.trace({
  *     name: "cover_letter_generation",
@@ -19,13 +19,14 @@
  *
  * Design: Silent failure — errors are logged to console.error only.
  * The SDK never throws; your app must never crash because of GrandJury.
+ * If no API key is configured, all methods are no-ops.
  */
 
 const DEFAULT_BASE_URL = "https://grandjury-server.onrender.com";
 
 export interface GrandJuryOptions {
-  apiKey: string;
-  projectId: string;
+  /** API key. Defaults to GRANDJURY_API_KEY environment variable. */
+  apiKey?: string;
   baseUrl?: string;
   timeoutMs?: number;
 }
@@ -54,23 +55,32 @@ function generateInferenceId(): string {
 }
 
 export class GrandJury {
-  private readonly apiKey: string;
-  private readonly projectId: string;
+  private readonly apiKey: string | undefined;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
 
-  constructor(options: GrandJuryOptions) {
-    this.apiKey = options.apiKey;
-    this.projectId = options.projectId;
+  constructor(options: GrandJuryOptions = {}) {
+    // Resolve API key: explicit option → env var → undefined (no-op mode)
+    this.apiKey =
+      options.apiKey ??
+      (typeof process !== "undefined" ? process.env.GRANDJURY_API_KEY : undefined);
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, "");
     this.timeoutMs = options.timeoutMs ?? 5000;
+
+    if (!this.apiKey) {
+      console.warn("[grandjury] No API key found — SDK is in no-op mode. Set GRANDJURY_API_KEY to enable.");
+    }
   }
 
   /**
-   * Submit one trace. Silent on failure.
+   * Submit one trace. Silent on failure. No-op if no API key is configured.
    */
   async trace(input: TraceInput): Promise<TraceResult> {
     const inferenceId = input.gjInferenceId ?? generateInferenceId();
+
+    if (!this.apiKey) {
+      return { gjInferenceId: inferenceId, success: false };
+    }
 
     try {
       const controller = new AbortController();
