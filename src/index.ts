@@ -21,7 +21,7 @@
  * The SDK never throws; your app must never crash because of GrandJury.
  */
 
-const DEFAULT_BASE_URL = "https://grandjury-server.onrender.com";
+const DEFAULT_BASE_URL = "https://api.humanjudge.com";
 
 export interface GrandJuryOptions {
   apiKey: string;
